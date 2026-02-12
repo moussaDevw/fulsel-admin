@@ -1,19 +1,20 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ResidencesList } from "@/components/residences-list"
+import prisma from '@/lib/prisma';
+import ResidencesListClient from '@/components/residences/ResidencesListClient';
 
-export default function ResidencesPage() {
-  return (
-    <div className="container py-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">L'Inventaire des Résidences</h1>
-        <Link href="/admin/residences/new">
-          <Button>Nouvelle Résidence</Button>
-        </Link>
-      </div>
-      <div className="mt-6">
-        <ResidencesList />
-      </div>
-    </div>
-  )
+export default async function ResidencesPage() {
+    const residences = await prisma.residences.findMany({
+        orderBy: {
+            created_at: 'desc'
+        }
+    });
+
+    // Serialize BigInt to strings for Client Components
+    const serializedResidences = JSON.parse(JSON.stringify(residences, (key, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+    ));
+
+    return (
+        <ResidencesListClient residences={serializedResidences} />
+    );
+
 }

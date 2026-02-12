@@ -1,12 +1,11 @@
 import { ResidenceForm } from "@/components/residence-form"
 
-export default function EditResidencePage({ params }: { params: { id: string } }) {
+export default async function EditResidencePage({ params }: { params: { id: string } }) {
+  const { id } = await params
   return (
-    <div className="container py-6">
-      <h1 className="text-2xl font-bold tracking-tight">Modifier la Résidence</h1>
-      <div className="mt-6">
-        <ResidenceForm id={params.id} />
-      </div>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-slate-800">Modifier la Résidence</h1>
+      <ResidenceForm id={id} />
     </div>
   )
 }

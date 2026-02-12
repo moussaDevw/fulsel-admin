@@ -60,6 +60,11 @@ const config: Config = {
   				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
+  			},
+  			fulser: {
+  				blue: '#1f3359',
+  				gold: '#d99541',
+  				light: '#f8f9fa',
   			}
   		},
   		borderRadius: {

@@ -2,9 +2,11 @@
 
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
+import { useUploadThing } from "@/lib/uploadthing-client"
 
 interface UploadResult {
   url: string
+  key: string
   success: boolean
 }
 
@@ -12,28 +14,41 @@ export function useFileUpload() {
   const [isUploading, setIsUploading] = useState(false)
   const { toast } = useToast()
 
+  // Use the imageUploader by default, but this can be adjusted if needed
+  const { startUpload } = useUploadThing("imageUploader", {
+    onUploadError: (error) => {
+      console.error("UploadThing Error (Image):", error);
+    },
+  })
+  const { startUpload: startPdfUpload } = useUploadThing("pdfUploader", {
+    onUploadError: (error) => {
+      console.error("UploadThing Error (PDF):", error);
+    },
+  })
+
   const uploadFile = async (file: File): Promise<UploadResult> => {
     setIsUploading(true)
 
     try {
-      const formData = new FormData()
-      formData.append("file", file)
+      // Determine which uploader to use
+      const isPdf = file.type === "application/pdf"
+      const uploadFn = isPdf ? startPdfUpload : startUpload
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      })
+      console.log("Starting upload for file:", file.name, "type:", file.type);
+      const res = await uploadFn([file]).catch(err => {
+        console.error("Internal startUpload error:", err);
+        throw err;
+      });
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error("Erreur de réponse:", errorText)
-        throw new Error(`Erreur HTTP: ${response.status} - ${errorText}`)
+      console.log("Upload response:", res);
+
+      if (!res || res.length === 0) {
+        throw new Error("Le téléchargement a échoué ou a été annulé (réponse vide).")
       }
 
-      const data = await response.json()
-
       return {
-        url: data.url,
+        url: res[0].url,
+        key: res[0].key,
         success: true,
       }
     } catch (error) {
@@ -46,6 +61,7 @@ export function useFileUpload() {
 
       return {
         url: "",
+        key: "",
         success: false,
       }
     } finally {

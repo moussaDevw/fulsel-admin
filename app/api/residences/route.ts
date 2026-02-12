@@ -1,15 +1,20 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import prisma from "@/lib/prisma"
 
 export async function GET() {
   try {
-    const residences = await sql`
-      SELECT r.id, r.title, r.slug, r.status, r.start_date, r.end_date, r.location, r.brochure_url
-      FROM residences r
-      ORDER BY r.created_at DESC
-    `
+    const residences = await prisma.residences.findMany({
+      orderBy: {
+        created_at: 'desc'
+      }
+    })
 
-    return NextResponse.json(residences)
+    // Convert bigints to strings
+    const serialized = JSON.parse(JSON.stringify(residences, (key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    ));
+
+    return NextResponse.json(serialized)
   } catch (error) {
     console.error("Erreur lors de la récupération des résidences:", error)
     return NextResponse.json({ error: "Erreur lors de la récupération des résidences" }, { status: 500 })
@@ -20,93 +25,78 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
-    // Insérer la résidence principale
-    const [residence] = await sql`
-      INSERT INTO residences (
-        title, slug, status, start_date, end_date, location, brochure_url
-      ) VALUES (
-        ${body.title}, ${body.slug}, ${body.status}, ${body.startDate}, ${body.endDate}, 
-        ${body.location || null}, ${body.brochureUrl || null}
-      )
-      RETURNING id, title, slug, status, start_date, end_date, location, brochure_url
-    `
+    // Create residence with nested relations
+    const residence = await prisma.residences.create({
+      data: {
+        title: body.title,
+        slug: body.slug || body.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-").replace(/-+/g, "-"),
+        image_cover: body.image_cover || null,
+        image_banner: body.image_banner || null,
+        status: body.status === "En cours" || body.status === "en_cours" ? "en_cours" : "venir",
+        startDate: body.startDate ? new Date(body.startDate) : null,
+        endDate: body.endDate ? new Date(body.endDate) : null,
+        location: body.location || null,
+        brochureUrl: body.brochureUrl || null,
+        residence_descriptions: {
+          create: (body.description || []).map((paragraph: string, index: number) => ({
+            paragraph,
+            position: index
+          }))
+        },
+        residence_apartment_types: {
+          create: (body.apartmentTypes || []).map((type: string, index: number) => ({
+            name: type,
+            position: index
+          }))
+        },
+        residence_amenities: {
+          create: (body.amenities || []).map((amenity: string, index: number) => ({
+            name: amenity,
+            position: index
+          }))
+        },
+        residence_plans: {
+          create: (body.plans || []).map((plan: any) => ({
+            title: plan.title,
+            url: plan.fileUrl,
+            thumbnailUrl: plan.thumbnailUrl || null
+          }))
+        }
+      }
+    })
 
-    // Insérer les paragraphes de description
-    if (body.description && body.description.length > 0) {
-      await Promise.all(
-        body.description.map((paragraph: string, index: number) => {
-          return sql`
-          INSERT INTO residence_descriptions (residence_id, paragraph, position)
-          VALUES (${residence.id}, ${paragraph}, ${index})
-        `
-        }),
-      )
-    }
-
-    // Insérer les types d'appartements
-    if (body.apartmentTypes && body.apartmentTypes.length > 0) {
-      await Promise.all(
-        body.apartmentTypes.map((type: string, index: number) => {
-          return sql`
-          INSERT INTO residence_apartment_types (residence_id, type_name, position)
-          VALUES (${residence.id}, ${type}, ${index})
-        `
-        }),
-      )
-    }
-
-    // Insérer les commodités
-    if (body.amenities && body.amenities.length > 0) {
-      await Promise.all(
-        body.amenities.map((amenity: string, index: number) => {
-          return sql`
-          INSERT INTO residence_amenities (residence_id, amenity_name, position)
-          VALUES (${residence.id}, ${amenity}, ${index})
-        `
-        }),
-      )
-    }
-
-    // Insérer les plans
-    if (body.plans && body.plans.length > 0) {
-      await Promise.all(
-        body.plans.map((plan: any) => {
-          return sql`
-          INSERT INTO residence_plans (residence_id, title, file_url, thumbnail_url)
-          VALUES (${residence.id}, ${plan.title}, ${plan.fileUrl}, ${plan.thumbnailUrl || null})
-        `
-        }),
-      )
-    }
-
-    // Insérer les catégories de galerie et leurs images
+    // Handle gallery (more complex because of categories)
     if (body.gallery) {
       const categories = Object.keys(body.gallery)
+      for (const categoryName of categories) {
+        const category = await prisma.residence_gallery_categories.create({
+          data: {
+            residence_id: residence.id,
+            name: categoryName
+          }
+        })
 
-      for (const category of categories) {
-        const [categoryRecord] = await sql`
-          INSERT INTO residence_gallery_categories (residence_id, category_name)
-          VALUES (${residence.id}, ${category})
-          RETURNING id
-        `
-
-        const images = body.gallery[category]
+        const images = body.gallery[categoryName]
         if (images && images.length > 0) {
-          await Promise.all(
-            images.map((imageUrl: string, index: number) => {
-              return sql`
-              INSERT INTO residence_gallery_images (category_id, image_url, position)
-              VALUES (${categoryRecord.id}, ${imageUrl}, ${index})
-            `
-            }),
-          )
+          await prisma.residence_gallery_images.createMany({
+            data: images.map((imageUrl: string, index: number) => ({
+              residence_id: residence.id,
+              residence_gallery_category_id: category.id,
+              url: imageUrl,
+              position: index
+            }))
+          })
         }
       }
     }
 
-    return NextResponse.json(residence, { status: 201 })
+    const serialized = JSON.parse(JSON.stringify(residence, (key, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+    ));
+
+    return NextResponse.json(serialized, { status: 201 })
   } catch (error) {
     console.error("Erreur lors de la création de la résidence:", error)
-    return NextResponse.json({ error: "Erreur lors de la création de la résidence" }, { status: 500 })
+    return NextResponse.json({ error: "Erreur lors de la création de la résidence", details: String(error) }, { status: 500 })
   }
 }
