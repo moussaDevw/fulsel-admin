@@ -7,7 +7,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { Plus, Trash2, Upload, X } from "lucide-react"
+import { Plus, Trash2, Upload, X, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useFileUpload } from "@/hooks/use-file-upload"
 
@@ -78,43 +78,63 @@ export function ImageGallery({ gallery = {}, onChange }: ImageGalleryProps) {
   }
 
   const handleImageUpload = async (category: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files || files.length === 0) return
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
 
     setIsUploadingImage(true)
 
-    try {
-      const file = files[0]
-      const result = await uploadFile(file)
+    let successCount = 0
+    let failCount = 0
+    const newUrls: string[] = []
 
-      if (result.success) {
+    try {
+      // Pour une meilleure UX, on peut uploader en parallèle avec Promise.all ou séquentiellement
+      // Utilisons une boucle pour pouvoir mettre à jour l'UI au fur et à mesure si on veut, 
+      // ou simplement tout traiter.
+      for (const file of files) {
+        try {
+          const result = await uploadFile(file)
+          if (result.success) {
+            newUrls.push(result.url)
+            successCount++
+          } else {
+            failCount++
+          }
+        } catch (err) {
+          console.error(`Erreur lors de l'upload de ${file.name}:`, err)
+          failCount++
+        }
+      }
+
+      if (newUrls.length > 0) {
         const updatedGallery = {
           ...gallery,
-          [category]: [...(gallery[category] || []), result.url],
+          [category]: [...(gallery[category] || []), ...newUrls],
         }
         onChange(updatedGallery)
+      }
 
+      if (successCount > 0) {
         toast({
-          title: "Image téléchargée",
-          description: "L'image a été téléchargée avec succès.",
+          title: "Téléchargement terminé",
+          description: `${successCount} image(s) ajoutée(s) avec succès.${failCount > 0 ? ` (${failCount} échec(s))` : ""}`,
         })
-      } else {
+      } else if (failCount > 0) {
         toast({
-          title: "Erreur",
-          description: "Impossible de télécharger l'image.",
+          title: "Échec du téléchargement",
+          description: "Aucune image n'a pu être téléchargée.",
           variant: "destructive",
         })
       }
     } catch (error) {
-      console.error("Erreur lors du téléchargement de l'image:", error)
+      console.error("Erreur globale lors du téléchargement:", error)
       toast({
         title: "Erreur",
-        description: `Une erreur est survenue: ${error instanceof Error ? error.message : String(error)}`,
+        description: "Une erreur critique est survenue lors de l'envoi.",
         variant: "destructive",
       })
     } finally {
       setIsUploadingImage(false)
-      // Reset the input
       e.target.value = ""
     }
   }
@@ -175,62 +195,94 @@ export function ImageGallery({ gallery = {}, onChange }: ImageGalleryProps) {
             <h3 className="text-lg font-medium mb-4">Images pour {selectedCategory}</h3>
 
             <div className="space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  value={newImageUrl}
-                  onChange={(e) => setNewImageUrl(e.target.value)}
-                  placeholder="URL de l'image"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault()
-                      handleAddImage(selectedCategory)
-                    }
-                  }}
-                />
-                <Button type="button" onClick={() => handleAddImage(selectedCategory)} variant="outline">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter URL
-                </Button>
-                <div className="relative">
+              <div className="flex flex-col gap-4">
+                <div className="flex gap-2">
                   <Input
+                    value={newImageUrl}
+                    onChange={(e) => setNewImageUrl(e.target.value)}
+                    placeholder="Coller l'URL d'une image..."
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault()
+                        handleAddImage(selectedCategory)
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                  <Button type="button" onClick={() => handleAddImage(selectedCategory)} variant="secondary">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter
+                  </Button>
+                </div>
+
+                <div className="relative group">
+                  <input
                     type="file"
                     accept="image/*"
-                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    multiple
+                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
                     onChange={(e) => handleImageUpload(selectedCategory, e)}
                     disabled={isUploadingImage}
                   />
-                  <Button type="button" variant="outline" disabled={isUploadingImage}>
-                    <Upload className="h-4 w-4 mr-2" />
-                    {isUploadingImage ? "Téléchargement..." : "Upload"}
-                  </Button>
+                  <div className={`
+                    border-2 border-dashed rounded-xl p-8 transition-all duration-200 flex flex-col items-center justify-center gap-2
+                    ${isUploadingImage ? 'bg-muted/50 border-muted' : 'border-muted-foreground/20 group-hover:border-primary/50 group-hover:bg-primary/5'}
+                  `}>
+                    <div className="p-3 bg-background rounded-full shadow-sm border mb-1">
+                      {isUploadingImage ? (
+                        <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                      ) : (
+                        <Upload className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                      )}
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium">
+                        {isUploadingImage ? "Envoi en cours..." : "Cliquez ou glissez une image ici"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1 text-center">
+                        PNG, JPG ou WEBP jusqu'à 10MB
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {!gallery[selectedCategory] || gallery[selectedCategory].length === 0 ? (
-                <div className="text-sm text-muted-foreground py-2">Aucune image dans cette catégorie</div>
+              {!gallery[selectedCategory] || (gallery[selectedCategory].length === 0 && !isUploadingImage) ? (
+                <div className="text-sm text-center text-muted-foreground py-10 bg-muted/20 rounded-lg border border-dashed">
+                  Aucune image dans cette catégorie
+                </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {gallery[selectedCategory].map((imageUrl, index) => (
-                    <div key={index} className="relative group">
-                      <div className="aspect-square relative overflow-hidden rounded-md border">
-                        <Image
-                          src={imageUrl || "/placeholder.svg"}
-                          alt={`Image ${index + 1}`}
-                          fill
-                          className="object-cover"
-                        />
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {/* Images existantes */}
+                  {gallery[selectedCategory]?.map((imageUrl, index) => (
+                    <div key={index} className="relative group aspect-square overflow-hidden rounded-xl border bg-muted shadow-sm hover:shadow-md transition-all duration-200">
+                      <Image
+                        src={imageUrl || "/placeholder.svg"}
+                        alt={`Image ${index + 1}`}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="h-8 w-8 scale-75 group-hover:scale-100 transition-transform duration-200"
+                          onClick={() => handleRemoveImage(selectedCategory, index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => handleRemoveImage(selectedCategory, index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
                   ))}
+
+                  {/* Placeholder de chargement (In-Grid Loading) */}
+                  {isUploadingImage && (
+                    <div className="relative aspect-square rounded-xl border-2 border-primary/30 bg-primary/5 overflow-hidden animate-pulse flex flex-col items-center justify-center gap-2">
+                      <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                      <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Upload...</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

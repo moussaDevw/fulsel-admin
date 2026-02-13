@@ -9,7 +9,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
-import { CalendarIcon, Trash2, Plus, ImagePlus, Loader2, ArrowRight, ArrowLeft, Save, X } from "lucide-react"
+import { CalendarIcon, Trash2, Plus, ImagePlus, Loader2, ArrowRight, ArrowLeft, Save, X, Upload } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -373,31 +373,17 @@ export function ResidenceForm({ id }: { id?: string }) {
             <Card>
               <CardContent className="pt-6">
                 <h2 className="text-xl font-semibold mb-6">Médias Principaux</h2>
-                
+
                 <div className="space-y-6">
                   <div className="space-y-4">
                     <FormLabel>Image de Couverture</FormLabel>
-                    <div className="flex flex-col md:flex-row gap-6 items-start">
-                      <div className="relative w-full md:w-64 aspect-video bg-muted rounded-lg overflow-hidden border-2 border-dashed border-border flex items-center justify-center">
-                        {coverImage ? (
-                          <img src={coverImage} alt="Cover preview" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="text-muted-foreground flex flex-col items-center">
-                            <ImagePlus className="h-8 w-8 mb-2" />
-                            <span className="text-xs text-center px-4 italic">Aucune image sélectionnée</span>
-                          </div>
-                        )}
-                        {isUploadingFile && (
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <Loader2 className="h-8 w-8 text-white animate-spin" />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 space-y-4">
-                        <Input
+                    <div className="space-y-4">
+                      <div className="relative group">
+                        <input
                           type="file"
                           accept="image/*"
+                          className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                          disabled={isUploadingFile}
                           onChange={async (e) => {
                             const file = e.target.files?.[0]
                             if (file) {
@@ -410,36 +396,55 @@ export function ResidenceForm({ id }: { id?: string }) {
                             }
                           }}
                         />
-                        <p className="text-xs text-muted-foreground italic">
-                          Cette image sera utilisée comme bannière principale et sur les cartes de projets.
-                        </p>
+                        <div className={`
+                          relative w-full aspect-[3/1] max-h-48 rounded-xl border-2 border-dashed transition-all duration-200 flex flex-col items-center justify-center overflow-hidden
+                          ${isUploadingFile ? 'bg-muted/50 border-muted' : 'border-muted-foreground/20 group-hover:border-primary/50 group-hover:bg-primary/5'}
+                        `}>
+                          {coverImage ? (
+                            <>
+                              <img src={coverImage} alt="Cover preview" className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <div className="bg-white/90 p-2 rounded-full shadow-lg">
+                                  <Upload className="h-5 w-5 text-slate-900" />
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex flex-col items-center gap-1 p-4">
+                              <div className="p-2 bg-background rounded-full shadow-sm border">
+                                <Upload className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                              </div>
+                              <div className="text-center">
+                                <p className="text-xs font-semibold">Image de couverture</p>
+                                <p className="text-[10px] text-muted-foreground">Cliquez ou glissez une image</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {isUploadingFile && (
+                            <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-2 z-20 backdrop-blur-[2px]">
+                              <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                              <span className="text-xs font-bold text-primary uppercase tracking-widest animate-pulse">Envoi en cours...</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
+                      <p className="text-xs text-muted-foreground italic flex items-center gap-2">
+                        <span className="h-1 w-1 rounded-full bg-slate-400" />
+                        Cette image sera utilisée comme bannière principale et sur les cartes de projets.
+                      </p>
                     </div>
                   </div>
 
                   <div className="space-y-4">
                     <FormLabel>Image de Bannière (Détail Projet)</FormLabel>
-                    <div className="flex flex-col md:flex-row gap-6 items-start">
-                      <div className="relative w-full md:w-64 aspect-[21/9] bg-muted rounded-lg overflow-hidden border-2 border-dashed border-border flex items-center justify-center">
-                        {bannerImage ? (
-                          <img src={bannerImage} alt="Banner preview" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="text-muted-foreground flex flex-col items-center">
-                            <ImagePlus className="h-8 w-8 mb-2" />
-                            <span className="text-xs text-center px-4 italic">Aucune image sélectionnée</span>
-                          </div>
-                        )}
-                        {isUploadingFile && (
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <Loader2 className="h-8 w-8 text-white animate-spin" />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 space-y-4">
-                        <Input
+                    <div className="space-y-4">
+                      <div className="relative group">
+                        <input
                           type="file"
                           accept="image/*"
+                          className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                          disabled={isUploadingFile}
                           onChange={async (e) => {
                             const file = e.target.files?.[0]
                             if (file) {
@@ -452,10 +457,43 @@ export function ResidenceForm({ id }: { id?: string }) {
                             }
                           }}
                         />
-                        <p className="text-xs text-muted-foreground italic">
-                          Cette image sera affichée en haut de la page de détails du projet sur le site public.
-                        </p>
+                        <div className={`
+                          relative w-full aspect-[4/1] max-h-40 rounded-xl border-2 border-dashed transition-all duration-200 flex flex-col items-center justify-center overflow-hidden
+                          ${isUploadingFile ? 'bg-muted/50 border-muted' : 'border-muted-foreground/20 group-hover:border-primary/50 group-hover:bg-primary/5'}
+                        `}>
+                          {bannerImage ? (
+                            <>
+                              <img src={bannerImage} alt="Banner preview" className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <div className="bg-white/90 p-2 rounded-full shadow-lg">
+                                  <Upload className="h-5 w-5 text-slate-900" />
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex flex-col items-center gap-1 p-4">
+                              <div className="p-2 bg-background rounded-full shadow-sm border">
+                                <Upload className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                              </div>
+                              <div className="text-center">
+                                <p className="text-xs font-semibold">Image de bannière</p>
+                                <p className="text-[10px] text-muted-foreground">Cliquez ou glissez une image</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {isUploadingFile && (
+                            <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-2 z-20 backdrop-blur-[2px]">
+                              <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                              <span className="text-xs font-bold text-primary uppercase tracking-widest animate-pulse">Envoi en cours...</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
+                      <p className="text-xs text-muted-foreground italic flex items-center gap-2">
+                        <span className="h-1 w-1 rounded-full bg-slate-400" />
+                        Cette image sera affichée en haut de la page de détails du projet sur le site public.
+                      </p>
                     </div>
                   </div>
 
@@ -467,26 +505,57 @@ export function ResidenceForm({ id }: { id?: string }) {
                       name="brochureUrl"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Brochure PDF</FormLabel>
-                          <div className="flex gap-4 items-center">
-                            <FormControl>
-                              <Input {...field} placeholder="https://example.com/brochure.pdf" className="flex-1" />
-                            </FormControl>
-                            <Input
-                              type="file"
-                              accept=".pdf"
-                              className="w-auto max-w-[200px]"
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0]
-                                if (file) {
-                                  const result = await uploadFile(file)
-                                  if (result.success) {
-                                    form.setValue("brochureUrl", result.url)
-                                    toast({ title: "Brochure mise à jour", description: "Le fichier PDF a été téléchargé." })
+                          <FormLabel>Brochure PDF (Présentation commerciale)</FormLabel>
+                          <div className="flex flex-col gap-3">
+                            <div className="flex gap-2">
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  placeholder="URL du PDF ou téléchargez un fichier..."
+                                  className="flex-1"
+                                />
+                              </FormControl>
+                              {field.value && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => window.open(field.value, '_blank')}
+                                  title="Ouvrir le PDF"
+                                >
+                                  <ArrowRight className="h-4 w-4 -rotate-45" />
+                                </Button>
+                              )}
+                            </div>
+
+                            <div className="relative group/file">
+                              <Input
+                                type="file"
+                                accept=".pdf"
+                                className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) {
+                                    const result = await uploadFile(file)
+                                    if (result.success) {
+                                      form.setValue("brochureUrl", result.url)
+                                      toast({ title: "Brochure mise à jour", description: "Le fichier PDF a été téléchargé." })
+                                    }
                                   }
-                                }
-                              }}
-                            />
+                                }}
+                              />
+                              <div className="flex items-center gap-3 p-3 border-2 border-dashed border-muted-foreground/20 rounded-lg group-hover/file:border-primary/50 transition-colors bg-muted/30">
+                                <div className="p-2 bg-background rounded-md shadow-sm border">
+                                  {isUploadingFile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4 text-muted-foreground" />}
+                                </div>
+                                <div className="flex-1 text-sm">
+                                  <p className="font-medium">
+                                    {isUploadingFile ? "Téléchargement..." : field.value ? "Remplacer la brochure" : "Cliquez pour uploader le PDF"}
+                                  </p>
+                                  {field.value && <p className="text-[10px] text-muted-foreground truncate max-w-[200px]">{field.value.split('/').pop()}</p>}
+                                </div>
+                              </div>
+                            </div>
                           </div>
                           <FormMessage />
                         </FormItem>
@@ -502,7 +571,7 @@ export function ResidenceForm({ id }: { id?: string }) {
             <Card>
               <CardContent className="pt-6">
                 <h2 className="text-xl font-semibold mb-6">Contenu & Typologies</h2>
-                
+
                 <FormField
                   control={form.control}
                   name="description"
@@ -643,9 +712,9 @@ export function ResidenceForm({ id }: { id?: string }) {
           <div className="sticky bottom-0 bg-white/80 backdrop-blur-sm border-t p-4 mt-8 flex items-center justify-between z-10 rounded-b-lg">
             <div className="flex gap-2">
               {currentStep !== "general" && (
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   size="icon"
                   onClick={() => {
                     const stepIdx = steps.findIndex(s => s.id === currentStep);
@@ -656,9 +725,9 @@ export function ResidenceForm({ id }: { id?: string }) {
                 </Button>
               )}
               {currentStep !== "gallery" && (
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   size="icon"
                   onClick={() => {
                     const stepIdx = steps.findIndex(s => s.id === currentStep);
@@ -671,9 +740,9 @@ export function ResidenceForm({ id }: { id?: string }) {
             </div>
 
             <div className="flex gap-3">
-              <Button 
-                type="button" 
-                variant="ghost" 
+              <Button
+                type="button"
+                variant="ghost"
                 className="text-slate-500 hover:text-slate-700"
                 onClick={() => router.push("/admin/residences")}
               >
