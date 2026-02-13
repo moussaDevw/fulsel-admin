@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useFileUpload } from '@/hooks/use-file-upload';
 import { useToast } from '@/hooks/use-toast';
+import { serializeBigInt } from '@/lib/bigint-utils';
 
 interface SettingsClientProps {
     settings: any;
@@ -57,7 +58,7 @@ export default function SettingsClient({ settings }: SettingsClientProps) {
             const response = await fetch('/api/admin/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(serializeBigInt(formData)),
             });
             if (response.ok) {
                 toast({ title: "Succès", description: "Paramètres enregistrés avec succès !" });

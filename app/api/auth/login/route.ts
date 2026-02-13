@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import { encrypt } from "@/lib/session";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { cookies } from "next/headers";
 
 export async function POST(request: Request) {
     try {
@@ -29,7 +28,6 @@ export async function POST(request: Request) {
         }
 
         // 2. Validate password
-        // If not hashed (e.g. initial seed), implement logic to hash or compare plaintext then update
         const isPasswordValid = await bcrypt.compare(password, user.password);
 
         if (!isPasswordValid) {
@@ -49,19 +47,26 @@ export async function POST(request: Request) {
             }
         }
 
-        // 3. Create session
+        // 3. Create JWT token
         const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-        const session = await encrypt({
+        const token = await encrypt({
             userId: user.id.toString(),
             email: user.email,
             role: "admin", // Assuming admin for now, or fetch role from user
             expiresAt: expires,
         });
 
-        // 4. Set cookie
-        cookies().set("session", session, { httpOnly: true, secure: true, expires, sameSite: "lax", path: "/" });
-
-        return NextResponse.json({ success: true, user: { email: user.email, name: user.name } });
+        // 4. Return token and user data to be stored client-side
+        return NextResponse.json({
+            success: true,
+            token,
+            user: {
+                id: user.id.toString(),
+                email: user.email,
+                name: user.name,
+                role: "admin"
+            }
+        });
 
     } catch (error) {
         console.error("Login Error:", error);

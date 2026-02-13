@@ -13,10 +13,12 @@ export function LogoutButton() {
     const handleLogout = async () => {
         try {
             setLoading(true);
-            await fetch("/api/auth/logout", {
-                method: "POST",
-            });
-            router.refresh();
+
+            // Clear localStorage
+            localStorage.removeItem('fulser_auth_token');
+            localStorage.removeItem('fulser_user_data');
+
+            // Redirect to login
             router.push("/auth/login");
         } catch (error) {
             console.error("Erreur déconnexion:", error);
