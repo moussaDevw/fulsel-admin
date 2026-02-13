@@ -26,6 +26,7 @@ import { ImageGallery } from "@/components/image-gallery"
 import { PlanDocumentManager } from "@/components/plan-document-manager"
 import { useFileUpload } from "@/hooks/use-file-upload"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { serializeBigInt } from "@/lib/bigint-utils"
 
 const formSchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
@@ -216,7 +217,7 @@ export function ResidenceForm({ id }: { id?: string }) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formattedData),
+        body: JSON.stringify(serializeBigInt(formattedData)),
       })
 
       if (!response.ok) {

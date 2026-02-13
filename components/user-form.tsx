@@ -15,6 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { useFileUpload } from "@/hooks/use-file-upload"
+import { serializeBigInt } from "@/lib/bigint-utils"
 
 const formSchema = z.object({
   name: z.string().min(1, "Le nom est requis"),
@@ -73,7 +74,7 @@ export function UserForm({ id, initialData, isProfile = false }: UserFormProps) 
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(serializeBigInt(payload)),
       })
 
       if (!response.ok) throw new Error("Erreur lors de l'enregistrement")

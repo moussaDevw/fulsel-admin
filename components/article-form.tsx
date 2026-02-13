@@ -22,6 +22,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { useFileUpload } from "@/hooks/use-file-upload"
+import { serializeBigInt } from "@/lib/bigint-utils"
 
 const formSchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
@@ -200,7 +201,7 @@ export function ArticleForm({ id }: { id?: string }) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formattedData),
+        body: JSON.stringify(serializeBigInt(formattedData)),
       })
 
       if (!response.ok) {
