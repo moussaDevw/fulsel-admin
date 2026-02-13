@@ -1,6 +1,8 @@
 import prisma from '@/lib/prisma';
 import ResidencesListClient from '@/components/residences/ResidencesListClient';
 
+export const dynamic = "force-dynamic";
+
 export default async function ResidencesPage() {
     const residences = await prisma.residences.findMany({
         orderBy: {

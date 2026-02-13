@@ -9,7 +9,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // output: "standalone", // Décommentez pour Docker (nécessite admin sur Windows)
+  output: "standalone",
 }
 
 export default nextConfig

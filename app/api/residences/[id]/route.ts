@@ -36,6 +36,7 @@ export async function GET(
       endDate: residence.endDate,
       location: residence.location,
       brochureUrl: residence.brochureUrl,
+      brochure_public_id: residence.brochure_public_id,
       image_cover: residence.image_cover,
       image_banner: residence.image_banner,
       description: residence.residence_descriptions.map(d => d.paragraph),
@@ -69,8 +70,7 @@ export async function PUT(
     const body = await request.json()
     const residenceId = BigInt(id)
 
-    console.log("Updating residence:", id, "Body:", JSON.stringify(body, null, 2))
-    console.log("Image banner value:", body.image_banner)
+
 
     // Delete existing relations to "re-create" them
     await prisma.$transaction([
