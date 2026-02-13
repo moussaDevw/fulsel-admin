@@ -37,6 +37,7 @@ export async function GET(
       location: residence.location,
       brochureUrl: residence.brochureUrl,
       image_cover: residence.image_cover,
+      image_banner: residence.image_banner,
       description: residence.residence_descriptions.map(d => d.paragraph),
       amenities: residence.residence_amenities.map(a => a.name),
       apartmentTypes: residence.residence_apartment_types.map(t => t.name),
@@ -67,6 +68,9 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
     const residenceId = BigInt(id)
+
+    console.log("Updating residence:", id, "Body:", JSON.stringify(body, null, 2))
+    console.log("Image banner value:", body.image_banner)
 
     // Delete existing relations to "re-create" them
     await prisma.$transaction([
@@ -120,9 +124,9 @@ export async function PUT(
       const existingCategories = await prisma.residence_gallery_categories.findMany({
         where: { residence_id: residenceId }
       })
-      
+
       for (const cat of existingCategories) {
-          await prisma.residence_gallery_images.deleteMany({ where: { residence_gallery_category_id: cat.id } })
+        await prisma.residence_gallery_images.deleteMany({ where: { residence_gallery_category_id: cat.id } })
       }
       await prisma.residence_gallery_images.deleteMany({ where: { residence_id: residenceId } })
       await prisma.residence_gallery_categories.deleteMany({ where: { residence_id: residenceId } })
@@ -166,13 +170,13 @@ export async function DELETE(
     const residenceId = BigInt(id)
 
     await prisma.$transaction(async (tx) => {
-        await tx.residence_gallery_images.deleteMany({ where: { residence_id: residenceId } })
-        await tx.residence_gallery_categories.deleteMany({ where: { residence_id: residenceId } })
-        await tx.residence_descriptions.deleteMany({ where: { residence_id: residenceId } })
-        await tx.residence_amenities.deleteMany({ where: { residence_id: residenceId } })
-        await tx.residence_apartment_types.deleteMany({ where: { residence_id: residenceId } })
-        await tx.residence_plans.deleteMany({ where: { residence_id: residenceId } })
-        await tx.residences.delete( { where: { id: residenceId } })
+      await tx.residence_gallery_images.deleteMany({ where: { residence_id: residenceId } })
+      await tx.residence_gallery_categories.deleteMany({ where: { residence_id: residenceId } })
+      await tx.residence_descriptions.deleteMany({ where: { residence_id: residenceId } })
+      await tx.residence_amenities.deleteMany({ where: { residence_id: residenceId } })
+      await tx.residence_apartment_types.deleteMany({ where: { residence_id: residenceId } })
+      await tx.residence_plans.deleteMany({ where: { residence_id: residenceId } })
+      await tx.residences.delete({ where: { id: residenceId } })
     })
 
     return NextResponse.json({ success: true })
