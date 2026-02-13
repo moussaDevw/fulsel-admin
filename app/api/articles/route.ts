@@ -1,15 +1,28 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import prisma from "@/lib/prisma"
 
 export async function GET() {
   try {
-    const articles = await sql`
-      SELECT id, title, slug, image, excerpt, published_at, author
-      FROM articles
-      ORDER BY published_at DESC
-    `
+    const articles = await prisma.articles.findMany({
+      orderBy: {
+        published_at: 'desc'
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        image: true,
+        excerpt: true,
+        published_at: true,
+        author: true
+      }
+    })
 
-    return NextResponse.json(articles)
+    const serialized = JSON.parse(JSON.stringify(articles, (key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    ));
+
+    return NextResponse.json(serialized)
   } catch (error) {
     console.error("Erreur lors de la récupération des articles:", error)
     return NextResponse.json({ error: "Erreur lors de la récupération des articles" }, { status: 500 })
@@ -20,17 +33,32 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
-    const [article] = await sql`
-      INSERT INTO articles (
-        title, slug, image, excerpt, content, published_at, author
-      ) VALUES (
-        ${body.title}, ${body.slug}, ${body.image}, ${body.excerpt}, 
-        ${body.content}, ${body.publishedAt}, ${body.author}
-      )
-      RETURNING id, title, slug, image, excerpt, published_at, author
-    `
+    const article = await prisma.articles.create({
+      data: {
+        title: body.title,
+        slug: body.slug,
+        image: body.image,
+        excerpt: body.excerpt,
+        content: body.content,
+        published_at: body.publishedAt ? new Date(body.publishedAt) : null,
+        author: body.author
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        image: true,
+        excerpt: true,
+        published_at: true,
+        author: true
+      }
+    })
 
-    return NextResponse.json(article, { status: 201 })
+    const serialized = JSON.parse(JSON.stringify(article, (key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    ));
+
+    return NextResponse.json(serialized, { status: 201 })
   } catch (error) {
     console.error("Erreur lors de la création de l'article:", error)
     return NextResponse.json({ error: "Erreur lors de la création de l'article" }, { status: 500 })

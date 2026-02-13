@@ -3,12 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model blog_categories {
-  id               BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  id               BigInt       @id @default(autoincrement())
   name             String       @db.VarChar(255)
   slug             String       @unique(map: "blog_categories_slug_unique") @db.VarChar(255)
   description      String?      @db.Text
@@ -18,9 +18,9 @@ model blog_categories {
   meta_description String?      @db.Text
   is_active        Boolean      @default(true)
   sort_order       Int          @default(0)
-  created_at       DateTime?    @db.Timestamp(0)
-  updated_at       DateTime?    @db.Timestamp(0)
-  deleted_at       DateTime?    @db.Timestamp(0)
+  created_at       DateTime?    @db.Timestamp(6)
+  updated_at       DateTime?    @db.Timestamp(6)
+  deleted_at       DateTime?    @db.Timestamp(6)
   blog_posts       blog_posts[]
 
   @@index([is_active, sort_order], map: "blog_categories_is_active_sort_order_index")
@@ -28,10 +28,10 @@ model blog_categories {
 }
 
 model blog_comments {
-  id                  BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
-  blog_post_id        BigInt               @db.UnsignedBigInt
-  user_id             BigInt?              @db.UnsignedBigInt
-  parent_id           BigInt?              @db.UnsignedBigInt
+  id                  BigInt               @id @default(autoincrement())
+  blog_post_id        BigInt
+  user_id             BigInt?
+  parent_id           BigInt?
   guest_name          String?              @db.VarChar(255)
   guest_email         String?              @db.VarChar(255)
   guest_website       String?              @db.VarChar(255)
@@ -39,9 +39,9 @@ model blog_comments {
   status              blog_comments_status @default(pending)
   ip_address          String?              @db.VarChar(45)
   user_agent          String?              @db.Text
-  created_at          DateTime?            @db.Timestamp(0)
-  updated_at          DateTime?            @db.Timestamp(0)
-  deleted_at          DateTime?            @db.Timestamp(0)
+  created_at          DateTime?            @db.Timestamp(6)
+  updated_at          DateTime?            @db.Timestamp(6)
+  deleted_at          DateTime?            @db.Timestamp(6)
   blog_posts          blog_posts           @relation(fields: [blog_post_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "blog_comments_blog_post_id_foreign")
   blog_comments       blog_comments?       @relation("blog_commentsToblog_comments", fields: [parent_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "blog_comments_parent_id_foreign")
   other_blog_comments blog_comments[]      @relation("blog_commentsToblog_comments")
@@ -53,16 +53,16 @@ model blog_comments {
 }
 
 model blog_posts {
-  id                       BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  id                       BigInt            @id @default(autoincrement())
   title                    String            @db.VarChar(255)
   slug                     String            @unique(map: "blog_posts_slug_unique") @db.VarChar(255)
   excerpt                  String?           @db.Text
-  content                  String            @db.LongText
+  content                  String            @db.Text
   featured_image           String?           @db.VarChar(255)
   featured_image_public_id String?           @db.VarChar(255)
-  gallery_images           String?           @db.LongText
+  gallery_images           String?           @db.Text
   status                   blog_posts_status @default(draft)
-  published_at             DateTime?         @db.Timestamp(0)
+  published_at             DateTime?         @db.Timestamp(6)
   views_count              Int               @default(0)
   likes_count              Int               @default(0)
   reading_time             Int?
@@ -70,14 +70,14 @@ model blog_posts {
   allow_comments           Boolean           @default(true)
   meta_title               String?           @db.VarChar(255)
   meta_description         String?           @db.Text
-  meta_keywords            String?           @db.LongText
+  meta_keywords            String?           @db.Text
   og_image                 String?           @db.VarChar(255)
   og_image_public_id       String?           @db.VarChar(255)
-  blog_category_id         BigInt            @db.UnsignedBigInt
-  author_id                BigInt            @db.UnsignedBigInt
-  created_at               DateTime?         @db.Timestamp(0)
-  updated_at               DateTime?         @db.Timestamp(0)
-  deleted_at               DateTime?         @db.Timestamp(0)
+  blog_category_id         BigInt
+  author_id                BigInt
+  created_at               DateTime?         @db.Timestamp(6)
+  updated_at               DateTime?         @db.Timestamp(6)
+  deleted_at               DateTime?         @db.Timestamp(6)
   blog_comments            blog_comments[]
   users                    users             @relation(fields: [author_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "blog_posts_author_id_foreign")
   blog_categories          blog_categories   @relation(fields: [blog_category_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "blog_posts_blog_category_id_foreign")
@@ -91,7 +91,7 @@ model blog_posts {
 
 model cache {
   key        String @id @db.VarChar(255)
-  value      String @db.MediumText
+  value      String @db.Text
   expiration Int
 
   @@index([expiration], map: "cache_expiration_index")
@@ -106,17 +106,17 @@ model cache_locks {
 }
 
 model failed_jobs {
-  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  id         BigInt   @id @default(autoincrement())
   uuid       String   @unique(map: "failed_jobs_uuid_unique") @db.VarChar(255)
   connection String   @db.Text
   queue      String   @db.Text
-  payload    String   @db.LongText
-  exception  String   @db.LongText
-  failed_at  DateTime @default(now()) @db.Timestamp(0)
+  payload    String   @db.Text
+  exception  String   @db.Text
+  failed_at  DateTime @default(now()) @db.Timestamp(6)
 }
 
 model infosystems {
-  id                  BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  id                  BigInt    @id @default(autoincrement())
   email               String?   @db.VarChar(255)
   phone               String?   @db.VarChar(255)
   phone_secondary     String?   @db.VarChar(255)
@@ -132,13 +132,13 @@ model infosystems {
   facebook            String?   @db.VarChar(255)
   youtube             String?   @db.VarChar(255)
   whatsapp            String?   @db.VarChar(255)
-  opening_hours       String?   @db.LongText
+  opening_hours       String?   @db.Text
   company_name        String?   @db.VarChar(255)
   company_description String?   @db.Text
   logo                String?   @db.VarChar(255)
   logo_public_id      String?   @db.VarChar(255)
-  created_at          DateTime? @db.Timestamp(0)
-  updated_at          DateTime? @db.Timestamp(0)
+  created_at          DateTime? @db.Timestamp(6)
+  updated_at          DateTime? @db.Timestamp(6)
 }
 
 model job_batches {
@@ -147,35 +147,35 @@ model job_batches {
   total_jobs     Int
   pending_jobs   Int
   failed_jobs    Int
-  failed_job_ids String  @db.LongText
-  options        String? @db.MediumText
+  failed_job_ids String  @db.Text
+  options        String? @db.Text
   cancelled_at   Int?
   created_at     Int
   finished_at    Int?
 }
 
 model jobs {
-  id           BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  id           BigInt @id @default(autoincrement())
   queue        String @db.VarChar(255)
-  payload      String @db.LongText
-  attempts     Int    @db.UnsignedTinyInt
-  reserved_at  Int?   @db.UnsignedInt
-  available_at Int    @db.UnsignedInt
-  created_at   Int    @db.UnsignedInt
+  payload      String @db.Text
+  attempts     Int    @db.SmallInt
+  reserved_at  Int?
+  available_at Int
+  created_at   Int
 
   @@index([queue], map: "jobs_queue_index")
 }
 
 model migrations {
-  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  id        Int    @id @default(autoincrement())
   migration String @db.VarChar(255)
   batch     Int
 }
 
 model model_has_permissions {
-  permission_id BigInt      @db.UnsignedBigInt
+  permission_id BigInt
   model_type    String      @db.VarChar(255)
-  model_id      BigInt      @db.UnsignedBigInt
+  model_id      BigInt
   permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "model_has_permissions_permission_id_foreign")
 
   @@id([permission_id, model_id, model_type])
@@ -183,9 +183,9 @@ model model_has_permissions {
 }
 
 model model_has_roles {
-  role_id    BigInt @db.UnsignedBigInt
+  role_id    BigInt
   model_type String @db.VarChar(255)
-  model_id   BigInt @db.UnsignedBigInt
+  model_id   BigInt
   roles      roles  @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "model_has_roles_role_id_foreign")
 
   @@id([role_id, model_id, model_type])
@@ -195,15 +195,15 @@ model model_has_roles {
 model password_reset_tokens {
   email      String    @id @db.VarChar(255)
   token      String    @db.VarChar(255)
-  created_at DateTime? @db.Timestamp(0)
+  created_at DateTime? @db.Timestamp(6)
 }
 
 model permissions {
-  id                    BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
+  id                    BigInt                  @id @default(autoincrement())
   name                  String                  @db.VarChar(255)
   guard_name            String                  @db.VarChar(255)
-  created_at            DateTime?               @db.Timestamp(0)
-  updated_at            DateTime?               @db.Timestamp(0)
+  created_at            DateTime?               @db.Timestamp(6)
+  updated_at            DateTime?               @db.Timestamp(6)
   model_has_permissions model_has_permissions[]
   role_has_permissions  role_has_permissions[]
 
@@ -211,23 +211,23 @@ model permissions {
 }
 
 model personal_access_tokens {
-  id             BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  id             BigInt    @id @default(autoincrement())
   tokenable_type String    @db.VarChar(255)
-  tokenable_id   BigInt    @db.UnsignedBigInt
+  tokenable_id   BigInt
   name           String    @db.Text
   token          String    @unique(map: "personal_access_tokens_token_unique") @db.VarChar(64)
   abilities      String?   @db.Text
-  last_used_at   DateTime? @db.Timestamp(0)
-  expires_at     DateTime? @db.Timestamp(0)
-  created_at     DateTime? @db.Timestamp(0)
-  updated_at     DateTime? @db.Timestamp(0)
+  last_used_at   DateTime? @db.Timestamp(6)
+  expires_at     DateTime? @db.Timestamp(6)
+  created_at     DateTime? @db.Timestamp(6)
+  updated_at     DateTime? @db.Timestamp(6)
 
   @@index([expires_at], map: "personal_access_tokens_expires_at_index")
   @@index([tokenable_type, tokenable_id], map: "personal_access_tokens_tokenable_type_tokenable_id_index")
 }
 
 model prospects {
-  id         BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  id         BigInt           @id @default(autoincrement())
   name       String           @db.VarChar(255)
   email      String           @db.VarChar(255)
   phone      String?          @db.VarChar(255)
@@ -236,9 +236,9 @@ model prospects {
   source     String?          @db.VarChar(255)
   status     prospects_status @default(new)
   notes      String?          @db.Text
-  created_at DateTime?        @db.Timestamp(0)
-  updated_at DateTime?        @db.Timestamp(0)
-  deleted_at DateTime?        @db.Timestamp(0)
+  created_at DateTime?        @db.Timestamp(6)
+  updated_at DateTime?        @db.Timestamp(6)
+  deleted_at DateTime?        @db.Timestamp(6)
 
   @@index([created_at], map: "prospects_created_at_index")
   @@index([email], map: "prospects_email_index")
@@ -246,52 +246,52 @@ model prospects {
 }
 
 model residence_amenities {
-  id           BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
-  residence_id BigInt     @db.UnsignedBigInt
+  id           BigInt     @id @default(autoincrement())
+  residence_id BigInt
   name         String     @db.VarChar(255)
   position     Int        @default(0)
-  created_at   DateTime?  @db.Timestamp(0)
-  updated_at   DateTime?  @db.Timestamp(0)
-  deleted_at   DateTime?  @db.Timestamp(0)
+  created_at   DateTime?  @db.Timestamp(6)
+  updated_at   DateTime?  @db.Timestamp(6)
+  deleted_at   DateTime?  @db.Timestamp(6)
   residences   residences @relation(fields: [residence_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "residence_amenities_residence_id_foreign")
 
   @@index([residence_id, position], map: "residence_amenities_residence_id_position_index")
 }
 
 model residence_apartment_types {
-  id           BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
-  residence_id BigInt     @db.UnsignedBigInt
+  id           BigInt     @id @default(autoincrement())
+  residence_id BigInt
   name         String     @db.VarChar(255)
   position     Int        @default(0)
-  created_at   DateTime?  @db.Timestamp(0)
-  updated_at   DateTime?  @db.Timestamp(0)
-  deleted_at   DateTime?  @db.Timestamp(0)
+  created_at   DateTime?  @db.Timestamp(6)
+  updated_at   DateTime?  @db.Timestamp(6)
+  deleted_at   DateTime?  @db.Timestamp(6)
   residences   residences @relation(fields: [residence_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "residence_apartment_types_residence_id_foreign")
 
   @@index([residence_id, position], map: "residence_apartment_types_residence_id_position_index")
 }
 
 model residence_descriptions {
-  id           BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
-  residence_id BigInt     @db.UnsignedBigInt
+  id           BigInt     @id @default(autoincrement())
+  residence_id BigInt
   paragraph    String     @db.Text
   position     Int        @default(0)
-  created_at   DateTime?  @db.Timestamp(0)
-  updated_at   DateTime?  @db.Timestamp(0)
-  deleted_at   DateTime?  @db.Timestamp(0)
+  created_at   DateTime?  @db.Timestamp(6)
+  updated_at   DateTime?  @db.Timestamp(6)
+  deleted_at   DateTime?  @db.Timestamp(6)
   residences   residences @relation(fields: [residence_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "residence_descriptions_residence_id_foreign")
 
   @@index([residence_id, position], map: "residence_descriptions_residence_id_position_index")
 }
 
 model residence_gallery_categories {
-  id                       BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
-  residence_id             BigInt                     @db.UnsignedBigInt
+  id                       BigInt                     @id @default(autoincrement())
+  residence_id             BigInt
   name                     String                     @db.VarChar(255)
   position                 Int                        @default(0)
-  created_at               DateTime?                  @db.Timestamp(0)
-  updated_at               DateTime?                  @db.Timestamp(0)
-  deleted_at               DateTime?                  @db.Timestamp(0)
+  created_at               DateTime?                  @db.Timestamp(6)
+  updated_at               DateTime?                  @db.Timestamp(6)
+  deleted_at               DateTime?                  @db.Timestamp(6)
   residences               residences                 @relation(fields: [residence_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "residence_gallery_categories_residence_id_foreign")
   residence_gallery_images residence_gallery_images[]
 
@@ -299,16 +299,16 @@ model residence_gallery_categories {
 }
 
 model residence_gallery_images {
-  id                            BigInt                        @id @default(autoincrement()) @db.UnsignedBigInt
-  residence_id                  BigInt                        @db.UnsignedBigInt
-  residence_gallery_category_id BigInt?                       @db.UnsignedBigInt
+  id                            BigInt                        @id @default(autoincrement())
+  residence_id                  BigInt
+  residence_gallery_category_id BigInt?
   url                           String                        @db.VarChar(255)
   public_id                     String?                       @db.VarChar(255)
   alt_text                      String?                       @db.VarChar(255)
   position                      Int                           @default(0)
-  created_at                    DateTime?                     @db.Timestamp(0)
-  updated_at                    DateTime?                     @db.Timestamp(0)
-  deleted_at                    DateTime?                     @db.Timestamp(0)
+  created_at                    DateTime?                     @db.Timestamp(6)
+  updated_at                    DateTime?                     @db.Timestamp(6)
+  deleted_at                    DateTime?                     @db.Timestamp(6)
   residence_gallery_categories  residence_gallery_categories? @relation(fields: [residence_gallery_category_id], references: [id], onUpdate: Restrict, map: "residence_gallery_images_residence_gallery_category_id_foreign")
   residences                    residences                    @relation(fields: [residence_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "residence_gallery_images_residence_id_foreign")
 
@@ -317,24 +317,24 @@ model residence_gallery_images {
 }
 
 model residence_plans {
-  id                  BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
-  residence_id        BigInt     @db.UnsignedBigInt
+  id                  BigInt     @id @default(autoincrement())
+  residence_id        BigInt
   title               String     @db.VarChar(255)
   url                 String     @db.VarChar(255)
   public_id           String?    @db.VarChar(255)
   thumbnailUrl        String?    @db.VarChar(255)
   thumbnail_public_id String?    @db.VarChar(255)
   position            Int        @default(0)
-  created_at          DateTime?  @db.Timestamp(0)
-  updated_at          DateTime?  @db.Timestamp(0)
-  deleted_at          DateTime?  @db.Timestamp(0)
+  created_at          DateTime?  @db.Timestamp(6)
+  updated_at          DateTime?  @db.Timestamp(6)
+  deleted_at          DateTime?  @db.Timestamp(6)
   residences          residences @relation(fields: [residence_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "residence_plans_residence_id_foreign")
 
   @@index([residence_id, position], map: "residence_plans_residence_id_position_index")
 }
 
 model residences {
-  id                           BigInt                         @id @default(autoincrement()) @db.UnsignedBigInt
+  id                           BigInt                         @id @default(autoincrement())
   title                        String                         @db.VarChar(255)
   slug                         String                         @unique(map: "residences_slug_unique") @db.VarChar(255)
   status                       residences_status              @default(draft)
@@ -349,9 +349,9 @@ model residences {
   image_cover_public_id        String?                        @db.VarChar(255)
   image_banner                 String?                        @db.VarChar(255)
   image_banner_public_id       String?                        @db.VarChar(255)
-  created_at                   DateTime?                      @db.Timestamp(0)
-  updated_at                   DateTime?                      @db.Timestamp(0)
-  deleted_at                   DateTime?                      @db.Timestamp(0)
+  created_at                   DateTime?                      @db.Timestamp(6)
+  updated_at                   DateTime?                      @db.Timestamp(6)
+  deleted_at                   DateTime?                      @db.Timestamp(6)
   residence_amenities          residence_amenities[]
   residence_apartment_types    residence_apartment_types[]
   residence_descriptions       residence_descriptions[]
@@ -365,21 +365,21 @@ model residences {
 }
 
 model role_has_permissions {
-  permission_id BigInt      @db.UnsignedBigInt
-  role_id       BigInt      @db.UnsignedBigInt
+  permission_id BigInt
+  role_id       BigInt
   permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "role_has_permissions_permission_id_foreign")
   roles         roles       @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "role_has_permissions_role_id_foreign")
 
   @@id([permission_id, role_id])
-  @@index([role_id], map: "role_has_permissions_role_id_foreign")
+  @@index([role_id], map: "role_has_permissions_role_id_index")
 }
 
 model roles {
-  id                   BigInt                 @id @default(autoincrement()) @db.UnsignedBigInt
+  id                   BigInt                 @id @default(autoincrement())
   name                 String                 @db.VarChar(255)
   guard_name           String                 @db.VarChar(255)
-  created_at           DateTime?              @db.Timestamp(0)
-  updated_at           DateTime?              @db.Timestamp(0)
+  created_at           DateTime?              @db.Timestamp(6)
+  updated_at           DateTime?              @db.Timestamp(6)
   model_has_roles      model_has_roles[]
   role_has_permissions role_has_permissions[]
 
@@ -388,10 +388,10 @@ model roles {
 
 model sessions {
   id            String  @id @db.VarChar(255)
-  user_id       BigInt? @db.UnsignedBigInt
+  user_id       BigInt?
   ip_address    String? @db.VarChar(45)
   user_agent    String? @db.Text
-  payload       String  @db.LongText
+  payload       String  @db.Text
   last_activity Int
 
   @@index([last_activity], map: "sessions_last_activity_index")
@@ -399,10 +399,10 @@ model sessions {
 }
 
 model users {
-  id                BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  id                BigInt          @id @default(autoincrement())
   name              String          @db.VarChar(255)
   email             String          @unique(map: "users_email_unique") @db.VarChar(255)
-  email_verified_at DateTime?       @db.Timestamp(0)
+  email_verified_at DateTime?       @db.Timestamp(6)
   password          String          @db.VarChar(255)
   phone             String?         @db.VarChar(255)
   birth_date        DateTime?       @db.Date
@@ -412,16 +412,30 @@ model users {
   avatar            String?         @db.VarChar(255)
   avatar_public_id  String?         @db.VarChar(255)
   status            users_status    @default(active)
-  last_login_at     DateTime?       @db.Timestamp(0)
+  last_login_at     DateTime?       @db.Timestamp(6)
   last_login_ip     String?         @db.VarChar(255)
   remember_token    String?         @db.VarChar(100)
-  created_at        DateTime?       @db.Timestamp(0)
-  updated_at        DateTime?       @db.Timestamp(0)
+  created_at        DateTime?       @db.Timestamp(6)
+  updated_at        DateTime?       @db.Timestamp(6)
   blog_comments     blog_comments[]
   blog_posts        blog_posts[]
 
   @@index([email], map: "users_email_index")
   @@index([status], map: "users_status_index")
+}
+
+// Added this model to support the 'articles' API route
+model articles {
+  id           BigInt    @id @default(autoincrement())
+  title        String    @db.VarChar(255)
+  slug         String    @unique @db.VarChar(255)
+  image        String?   @db.VarChar(255)
+  excerpt      String?   @db.Text
+  content      String?   @db.Text
+  published_at DateTime? @db.Timestamp(6)
+  author       String?   @db.VarChar(255)
+  created_at   DateTime  @default(now()) @db.Timestamp(6)
+  updated_at   DateTime  @updatedAt @db.Timestamp(6)
 }
 
 enum residences_status {

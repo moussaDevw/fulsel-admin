@@ -1,21 +1,35 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import prisma from "@/lib/prisma"
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const id = params.id
 
-    const [article] = await sql`
-      SELECT id, title, slug, image, excerpt, content, published_at, author
-      FROM articles
-      WHERE id = ${id}
-    `
+    const article = await prisma.articles.findUnique({
+      where: {
+        id: BigInt(id)
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        image: true,
+        excerpt: true,
+        content: true,
+        published_at: true,
+        author: true
+      }
+    })
 
     if (!article) {
       return NextResponse.json({ error: "Article non trouvé" }, { status: 404 })
     }
 
-    return NextResponse.json(article)
+    const serialized = JSON.parse(JSON.stringify(article, (key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    ));
+
+    return NextResponse.json(serialized)
   } catch (error) {
     console.error("Erreur lors de la récupération de l'article:", error)
     return NextResponse.json({ error: "Erreur lors de la récupération de l'article" }, { status: 500 })
@@ -27,30 +41,37 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const id = params.id
     const body = await request.json()
 
-    // Vérifier si l'article existe
-    const [existingArticle] = await sql`
-      SELECT id FROM articles WHERE id = ${id}
-    `
+    // Vérifier si l'article existe (optionnel car update échouera, mais permet un 404 propre)
+    const existingArticle = await prisma.articles.findUnique({
+      where: { id: BigInt(id) },
+      select: { id: true }
+    })
 
     if (!existingArticle) {
       return NextResponse.json({ error: "Article non trouvé" }, { status: 404 })
     }
 
     // Mettre à jour l'article
-    await sql`
-      UPDATE articles
-      SET title = ${body.title},
-          slug = ${body.slug},
-          image = ${body.image},
-          excerpt = ${body.excerpt},
-          content = ${body.content},
-          published_at = ${body.publishedAt},
-          author = ${body.author},
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${id}
-    `
+    const updatedArticle = await prisma.articles.update({
+      where: {
+        id: BigInt(id)
+      },
+      data: {
+        title: body.title,
+        slug: body.slug,
+        image: body.image,
+        excerpt: body.excerpt,
+        content: body.content,
+        published_at: body.published_at ? new Date(body.published_at) : (body.publishedAt ? new Date(body.publishedAt) : null), // Handle both cases just in case
+        author: body.author
+      }
+    })
 
-    return NextResponse.json({ id, message: "Article mis à jour avec succès" })
+    const serialized = JSON.parse(JSON.stringify(updatedArticle, (key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    ));
+
+    return NextResponse.json({ id, message: "Article mis à jour avec succès", article: serialized })
   } catch (error) {
     console.error("Erreur lors de la mise à jour de l'article:", error)
     return NextResponse.json({ error: "Erreur lors de la mise à jour de l'article" }, { status: 500 })
@@ -61,17 +82,20 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   try {
     const id = params.id
 
-    // Vérifier si l'article existe
-    const [existingArticle] = await sql`
-      SELECT id FROM articles WHERE id = ${id}
-    `
+    const existingArticle = await prisma.articles.findUnique({
+      where: { id: BigInt(id) },
+      select: { id: true }
+    })
 
     if (!existingArticle) {
       return NextResponse.json({ error: "Article non trouvé" }, { status: 404 })
     }
 
-    // Supprimer l'article
-    await sql`DELETE FROM articles WHERE id = ${id}`
+    await prisma.articles.delete({
+      where: {
+        id: BigInt(id)
+      }
+    })
 
     return NextResponse.json({ message: "Article supprimé avec succès" })
   } catch (error) {

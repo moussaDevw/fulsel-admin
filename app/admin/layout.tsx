@@ -22,7 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <Menu size={24} />
                         </button>
                         <div className="md:hidden font-bold text-fulser-blue">FULSER ADMIN</div>
-                        
+
                         {/* Breadcrumb for Desktop */}
                         <div className="hidden md:flex items-center text-sm text-gray-500">
                             <Home size={14} className="mr-2" />

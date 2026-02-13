@@ -82,7 +82,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
                 {/* Footer / Logout */}
                 <div className="p-6 border-t border-white/10 bg-slate-900/30">
                     <button
-                        onClick={() => {/* Handle Logout */}}
+                        onClick={async () => {
+                            try {
+                                await fetch("/api/auth/logout", {
+                                    method: "POST",
+                                });
+                                window.location.href = "/auth/login";
+                            } catch (error) {
+                                console.error("Erreur déconnexion:", error);
+                            }
+                        }}
                         className="flex items-center w-full text-sm font-medium text-red-300 hover:text-red-200 transition-colors"
                     >
                         <LogOut size={18} className="mr-3" />
