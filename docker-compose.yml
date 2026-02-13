@@ -1,0 +1,8 @@
+services:
+  app:
+    image: istamcodevops/fulsel-admin:latest
+    ports:
+      - "4100:3000"
+    env_file:
+      - .env
+    restart: unless-stopped
